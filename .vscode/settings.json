@@ -1,0 +1,21 @@
+{
+    "files.associations": {
+        "*.h": "cpp",
+        "qobject": "cpp",
+        "qstring": "cpp",
+        "qwidget": "cpp",
+        "qapplication": "cpp",
+        "qmainwindow": "cpp",
+        "qdialog": "cpp",
+        "qlineedit": "cpp",
+        "qpushbutton": "cpp",
+        "qlabel": "cpp",
+        "qtablewidget": "cpp"
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.compilerArgs": [
+        "-Wno-unknown-warning-option"
+    ],
+    "C_Cpp.errorSquiggles": "enabled",
+    "C_Cpp.intelliSenseEngine": "default"
+}
