@@ -21,10 +21,16 @@ set(PROJECT_SOURCES
     src/ui/loginwindow.h
     src/ui/passworddialog.cpp
     src/ui/passworddialog.h
+    src/ui/settingsdialog.cpp
+    src/ui/settingsdialog.h
+    src/ui/thememanager.cpp
+    src/ui/thememanager.h
     src/models/passwordentry.cpp
     src/models/passwordentry.h
     src/models/vaultinfo.cpp
     src/models/vaultinfo.h
+    src/models/settings.cpp
+    src/models/settings.h
     src/crypto/encryption.cpp
     src/crypto/encryption.h
     src/storage/database.cpp

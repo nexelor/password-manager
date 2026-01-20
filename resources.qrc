@@ -1,9 +1,8 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource prefix="/">
-        <file>src/styles/vaultmanager.qss</file>
-        <file>src/styles/mainwindow.qss</file>
-        <file>src/styles/loginwindow.qss</file>
-        <file>src/styles/passworddialog.qss</file>
+        <!-- Complete Theme Files -->
+        <file>src/styles/theme-dark.qss</file>
+        <file>src/styles/theme-light.qss</file>
     </qresource>
 </RCC>

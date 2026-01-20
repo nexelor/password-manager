@@ -12,23 +12,12 @@
 VaultManagerWindow::VaultManagerWindow(QWidget *parent)
     : QWidget(parent), m_vaultManager(new VaultManager()) {
     setupUi();
-    loadStyleSheet();
     refreshVaultList();
     showNoSelectionActions();
 }
 
 VaultManagerWindow::~VaultManagerWindow() {
     delete m_vaultManager;
-}
-
-void VaultManagerWindow::loadStyleSheet() {
-    QFile styleFile(":/src/styles/vaultmanager.qss");
-    if (!styleFile.open(QFile::ReadOnly)) {
-        qWarning("Could not open vault manager stylesheet");
-        return;
-    }
-    QString styleSheet = QLatin1String(styleFile.readAll());
-    setStyleSheet(styleSheet);
 }
 
 void VaultManagerWindow::setupUi() {

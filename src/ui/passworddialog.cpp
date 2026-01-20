@@ -8,17 +8,15 @@
 #include <QRandomGenerator>
 #include <QFile>
 
-PasswordDialog::PasswordDialog(QWidget *parent)
-    : QDialog(parent), m_isEditMode(false) {
+PasswordDialog::PasswordDialog(VaultSettings *vaultSettings, QWidget *parent)
+    : QDialog(parent), m_isEditMode(false), m_vaultSettings(vaultSettings) {
     setupUi();
-    loadStyleSheet();
     setWindowTitle("Add Password");
 }
 
-PasswordDialog::PasswordDialog(const PasswordEntry &entry, QWidget *parent)
-    : QDialog(parent), m_isEditMode(true), m_entry(entry) {
+PasswordDialog::PasswordDialog(const PasswordEntry &entry, VaultSettings *vaultSettings, QWidget *parent)
+    : QDialog(parent), m_isEditMode(true), m_entry(entry), m_vaultSettings(vaultSettings) {
     setupUi();
-    loadStyleSheet();
     setWindowTitle("Edit Password");
     
     m_titleInput->setText(entry.title());
@@ -26,16 +24,6 @@ PasswordDialog::PasswordDialog(const PasswordEntry &entry, QWidget *parent)
     m_passwordInput->setText(entry.password());
     m_urlInput->setText(entry.url());
     m_notesInput->setPlainText(entry.notes());
-}
-
-void PasswordDialog::loadStyleSheet() {
-    QFile styleFile(":/src/styles/passworddialog.qss");
-    if (!styleFile.open(QFile::ReadOnly)) {
-        qWarning("Could not open password dialog stylesheet");
-        return;
-    }
-    QString styleSheet = QLatin1String(styleFile.readAll());
-    setStyleSheet(styleSheet);
 }
 
 void PasswordDialog::setupUi() {
@@ -93,10 +81,18 @@ PasswordEntry PasswordDialog::getPasswordEntry() const {
 }
 
 void PasswordDialog::onGeneratePassword() {
-    QString password = generateRandomPassword();
+    int length = m_vaultSettings ? m_vaultSettings->defaultPasswordLength() : 16;
+    
+    QString password = generateRandomPassword(length);
     m_passwordInput->setText(password);
-    QMessageBox::information(this, "Password Generated", 
-        "A strong password has been generated.");
+    
+    bool requireConfirmation = m_vaultSettings ? 
+        m_vaultSettings->requirePasswordConfirmation() : true;
+    
+    if (requireConfirmation) {
+        QMessageBox::information(this, "Password Generated", 
+            QString("A strong %1-character password has been generated.").arg(length));
+    }
 }
 
 void PasswordDialog::onTogglePasswordVisibility() {

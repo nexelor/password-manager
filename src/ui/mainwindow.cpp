@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 #include "passworddialog.h"
+#include "settingsdialog.h"
+#include "thememanager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -11,18 +13,45 @@
 #include <QAction>
 #include <QCloseEvent>
 #include <QFile>
+#include <QTimer>
 
-MainWindow::MainWindow(Database *database, const QByteArray &masterKey, QWidget *parent)
-    : QMainWindow(parent), m_database(database), m_masterKey(masterKey) {
+MainWindow::MainWindow(Database *database, const QByteArray &masterKey, 
+                       const QString &vaultPath, QWidget *parent)
+    : QMainWindow(parent), 
+      m_database(database), 
+      m_masterKey(masterKey),
+      m_vaultPath(vaultPath),
+      m_appSettings(new AppSettings()),
+      m_vaultSettings(new VaultSettings(vaultPath)),
+      m_clipboardTimer(nullptr),
+      m_autoLockTimer(nullptr) {
     setAttribute(Qt::WA_DeleteOnClose);
     setupUi();
-    loadStyleSheet();
     loadPasswords();
+    
+    // Setup auto-lock timer
+    setupAutoLock();
+    
+    // Connect to theme changes
+    connect(ThemeManager::instance(), &ThemeManager::themeChanged, 
+            this, &MainWindow::onThemeChanged);
 }
 
 MainWindow::~MainWindow() {
     if (m_database) {
         delete m_database;
+    }
+    delete m_appSettings;
+    delete m_vaultSettings;
+    
+    if (m_clipboardTimer) {
+        m_clipboardTimer->stop();
+        delete m_clipboardTimer;
+    }
+    
+    if (m_autoLockTimer) {
+        m_autoLockTimer->stop();
+        delete m_autoLockTimer;
     }
 }
 
@@ -30,17 +59,13 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     // Clear sensitive data from memory
     m_masterKey.fill(0);
     m_allEntries.clear();
-    QMainWindow::closeEvent(event);
-}
-
-void MainWindow::loadStyleSheet() {
-    QFile styleFile(":/src/styles/mainwindow.qss");
-    if (!styleFile.open(QFile::ReadOnly)) {
-        qWarning("Could not open main window stylesheet");
-        return;
+    
+    // Clear clipboard if it contains password data
+    if (m_appSettings->clearClipboardAfterCopy()) {
+        QApplication::clipboard()->clear();
     }
-    QString styleSheet = QLatin1String(styleFile.readAll());
-    setStyleSheet(styleSheet);
+    
+    QMainWindow::closeEvent(event);
 }
 
 void MainWindow::setupUi() {
@@ -94,8 +119,16 @@ void MainWindow::setupUi() {
     
     // Menu bar
     QMenuBar *menuBar = new QMenuBar(this);
+    
     QMenu *fileMenu = menuBar->addMenu("File");
     QAction *exitAction = fileMenu->addAction("Exit");
+    
+    QMenu *editMenu = menuBar->addMenu("Edit");
+    QAction *settingsAction = editMenu->addAction("Settings...");
+    settingsAction->setShortcut(QKeySequence("Ctrl+,"));
+    
+    QMenu *helpMenu = menuBar->addMenu("Help");
+    QAction *aboutAction = helpMenu->addAction("About");
     
     setMenuBar(menuBar);
     
@@ -111,6 +144,34 @@ void MainWindow::setupUi() {
         m_deleteButton->setEnabled(hasSelection);
     });
     connect(exitAction, &QAction::triggered, this, &QMainWindow::close);
+    connect(settingsAction, &QAction::triggered, this, &MainWindow::onOpenSettings);
+    connect(aboutAction, &QAction::triggered, this, &MainWindow::onShowAbout);
+    
+    // Context menu for table
+    connect(m_tableWidget, &QTableWidget::customContextMenuRequested, 
+            this, &MainWindow::onShowContextMenu);
+}
+
+void MainWindow::setupAutoLock() {
+    int timeout = m_appSettings->autoLockTimeout();
+    if (timeout > 0) {
+        m_autoLockTimer = new QTimer(this);
+        m_autoLockTimer->setInterval(timeout * 60 * 1000); // Convert minutes to ms
+        connect(m_autoLockTimer, &QTimer::timeout, this, &MainWindow::onAutoLock);
+        m_autoLockTimer->start();
+    }
+}
+
+void MainWindow::resetAutoLockTimer() {
+    if (m_autoLockTimer && m_autoLockTimer->isActive()) {
+        m_autoLockTimer->start(); // Restart timer
+    }
+}
+
+void MainWindow::onAutoLock() {
+    QMessageBox::information(this, "Auto-Lock", 
+        "The vault has been locked due to inactivity.");
+    close();
 }
 
 void MainWindow::loadPasswords() {
@@ -135,7 +196,9 @@ void MainWindow::updateTable(const QList<PasswordEntry> &entries) {
 }
 
 void MainWindow::onAddPassword() {
-    PasswordDialog dialog(this);
+    resetAutoLockTimer();
+    
+    PasswordDialog dialog(m_vaultSettings, this);
     if (dialog.exec() == QDialog::Accepted) {
         PasswordEntry entry = dialog.getPasswordEntry();
         if (m_database->addEntry(entry, m_masterKey)) {
@@ -147,13 +210,15 @@ void MainWindow::onAddPassword() {
 }
 
 void MainWindow::onEditPassword() {
+    resetAutoLockTimer();
+    
     int currentRow = m_tableWidget->currentRow();
     if (currentRow < 0) return;
     
     int entryId = m_tableWidget->item(currentRow, 0)->data(Qt::UserRole).toInt();
     PasswordEntry entry = m_database->getEntry(entryId, m_masterKey);
     
-    PasswordDialog dialog(entry, this);
+    PasswordDialog dialog(entry, m_vaultSettings, this);
     if (dialog.exec() == QDialog::Accepted) {
         PasswordEntry updatedEntry = dialog.getPasswordEntry();
         updatedEntry.setId(entryId);
@@ -167,6 +232,8 @@ void MainWindow::onEditPassword() {
 }
 
 void MainWindow::onDeletePassword() {
+    resetAutoLockTimer();
+    
     int currentRow = m_tableWidget->currentRow();
     if (currentRow < 0) return;
     
@@ -208,6 +275,8 @@ void MainWindow::filterPasswords(const QString &searchText) {
 }
 
 void MainWindow::onTableDoubleClicked(int row, int column) {
+    resetAutoLockTimer();
+    
     if (column == 1) {
         onCopyUsername();
     } else {
@@ -216,18 +285,112 @@ void MainWindow::onTableDoubleClicked(int row, int column) {
 }
 
 void MainWindow::onCopyUsername() {
+    resetAutoLockTimer();
+    
     int currentRow = m_tableWidget->currentRow();
     if (currentRow >= 0) {
         QString username = m_tableWidget->item(currentRow, 1)->text();
         QApplication::clipboard()->setText(username);
+        
+        if (m_appSettings->clearClipboardAfterCopy()) {
+            startClipboardTimer();
+        }
     }
 }
 
 void MainWindow::onCopyPassword() {
+    resetAutoLockTimer();
+    
     int currentRow = m_tableWidget->currentRow();
     if (currentRow < 0) return;
     
     int entryId = m_tableWidget->item(currentRow, 0)->data(Qt::UserRole).toInt();
     PasswordEntry entry = m_database->getEntry(entryId, m_masterKey);
     QApplication::clipboard()->setText(entry.password());
+    
+    if (m_appSettings->clearClipboardAfterCopy()) {
+        startClipboardTimer();
+    }
+}
+
+void MainWindow::onOpenSettings() {
+    resetAutoLockTimer();
+    
+    SettingsDialog dialog(m_appSettings, m_vaultSettings, this);
+    if (dialog.exec() == QDialog::Accepted) {
+        // Reload settings that might have changed
+        applySettings();
+    }
+}
+
+void MainWindow::onShowAbout() {
+    SettingsDialog dialog(m_appSettings, m_vaultSettings, this);
+    // Open directly to the About page (index 5)
+    QListWidget *categoryList = dialog.findChild<QListWidget*>("categoryList");
+    if (categoryList) {
+        categoryList->setCurrentRow(5);
+    }
+    dialog.exec();
+}
+
+void MainWindow::onShowContextMenu(const QPoint &pos) {
+    resetAutoLockTimer();
+    
+    QTableWidgetItem *item = m_tableWidget->itemAt(pos);
+    if (!item) return;
+    
+    QMenu contextMenu(this);
+    QAction *copyUsernameAction = contextMenu.addAction("Copy Username");
+    QAction *copyPasswordAction = contextMenu.addAction("Copy Password");
+    contextMenu.addSeparator();
+    QAction *editAction = contextMenu.addAction("Edit");
+    QAction *deleteAction = contextMenu.addAction("Delete");
+    
+    connect(copyUsernameAction, &QAction::triggered, this, &MainWindow::onCopyUsername);
+    connect(copyPasswordAction, &QAction::triggered, this, &MainWindow::onCopyPassword);
+    connect(editAction, &QAction::triggered, this, &MainWindow::onEditPassword);
+    connect(deleteAction, &QAction::triggered, this, &MainWindow::onDeletePassword);
+    
+    contextMenu.exec(m_tableWidget->viewport()->mapToGlobal(pos));
+}
+
+void MainWindow::startClipboardTimer() {
+    if (m_clipboardTimer) {
+        m_clipboardTimer->stop();
+        delete m_clipboardTimer;
+    }
+    
+    int timeout = m_appSettings->clipboardClearTime();
+    m_clipboardTimer = new QTimer(this);
+    m_clipboardTimer->setSingleShot(true);
+    m_clipboardTimer->setInterval(timeout * 1000); // Convert to ms
+    connect(m_clipboardTimer, &QTimer::timeout, []() {
+        QApplication::clipboard()->clear();
+    });
+    m_clipboardTimer->start();
+}
+
+void MainWindow::applySettings() {
+    // Recreate auto-lock timer with new timeout
+    if (m_autoLockTimer) {
+        m_autoLockTimer->stop();
+        delete m_autoLockTimer;
+        m_autoLockTimer = nullptr;
+    }
+    setupAutoLock();
+}
+
+void MainWindow::onThemeChanged() {
+    // Theme is applied globally, no need to do anything here
+    // But we could refresh widgets if needed
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event) {
+    resetAutoLockTimer();
+    QMainWindow::keyPressEvent(event);
+}
+
+void MainWindow::mousePressEvent(QMouseEvent *event) {
+    resetAutoLockTimer();
+    QMainWindow::mousePressEvent(event);
 }

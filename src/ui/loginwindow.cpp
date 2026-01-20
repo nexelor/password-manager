@@ -11,7 +11,6 @@ LoginWindow::LoginWindow(const QString &vaultPath)
     : QWidget(nullptr), m_database(new Database()), m_vaultPath(vaultPath) {
     setAttribute(Qt::WA_DeleteOnClose);
     setupUi();
-    loadStyleSheet();
     
     if (!m_database->open(m_vaultPath)) {
         QMessageBox::critical(this, "Error", 
@@ -33,16 +32,6 @@ LoginWindow::~LoginWindow() {
     if (m_database) {
         delete m_database;
     }
-}
-
-void LoginWindow::loadStyleSheet() {
-    QFile styleFile(":/src/styles/loginwindow.qss");
-    if (!styleFile.open(QFile::ReadOnly)) {
-        qWarning("Could not open login window stylesheet");
-        return;
-    }
-    QString styleSheet = QLatin1String(styleFile.readAll());
-    setStyleSheet(styleSheet);
 }
 
 void LoginWindow::setupUi() {
@@ -142,7 +131,7 @@ void LoginWindow::unlockVault(const QString &masterPassword) {
         QByteArray salt = m_database->getUserSalt();
         QByteArray masterKey = Encryption::deriveMasterKey(masterPassword, salt);
         
-        MainWindow *mainWindow = new MainWindow(m_database, masterKey);
+        MainWindow *mainWindow = new MainWindow(m_database, masterKey, m_vaultPath);
         mainWindow->setAttribute(Qt::WA_DeleteOnClose);
         mainWindow->show();
         

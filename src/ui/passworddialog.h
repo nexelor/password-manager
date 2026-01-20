@@ -6,13 +6,14 @@
 #include <QTextEdit>
 #include <QPushButton>
 #include "../models/passwordentry.h"
+#include "../models/settings.h"
 
 class PasswordDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit PasswordDialog(QWidget *parent = nullptr);
-    explicit PasswordDialog(const PasswordEntry &entry, QWidget *parent = nullptr);
+    explicit PasswordDialog(VaultSettings *vaultSettings = nullptr, QWidget *parent = nullptr);
+    explicit PasswordDialog(const PasswordEntry &entry, VaultSettings *vaultSettings = nullptr, QWidget *parent = nullptr);
     
     PasswordEntry getPasswordEntry() const;
 
@@ -31,9 +32,10 @@ private:
     
     bool m_isEditMode;
     PasswordEntry m_entry;
+
+    VaultSettings *m_vaultSettings;
     
     void setupUi();
-    void loadStyleSheet();
     QString generateRandomPassword(int length = 16);
 };
 

@@ -46,7 +46,6 @@ private:
     QLabel *m_infoLabel;
     
     void setupUi();
-    void loadStyleSheet();
     void refreshVaultList();
     void openVaultAtPath(const QString &path);
     void showNoSelectionActions();
