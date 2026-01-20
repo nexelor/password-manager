@@ -10,11 +10,13 @@
 #include <QMenu>
 #include <QAction>
 #include <QCloseEvent>
+#include <QFile>
 
 MainWindow::MainWindow(Database *database, const QByteArray &masterKey, QWidget *parent)
     : QMainWindow(parent), m_database(database), m_masterKey(masterKey) {
     setAttribute(Qt::WA_DeleteOnClose);
     setupUi();
+    loadStyleSheet();
     loadPasswords();
 }
 
@@ -31,83 +33,20 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     QMainWindow::closeEvent(event);
 }
 
+void MainWindow::loadStyleSheet() {
+    QFile styleFile(":/src/styles/mainwindow.qss");
+    if (!styleFile.open(QFile::ReadOnly)) {
+        qWarning("Could not open main window stylesheet");
+        return;
+    }
+    QString styleSheet = QLatin1String(styleFile.readAll());
+    setStyleSheet(styleSheet);
+}
+
 void MainWindow::setupUi() {
     setWindowTitle("Password Manager");
     resize(900, 600);
     setMinimumSize(600, 400);
-    
-    setStyleSheet(
-        "QMainWindow {"
-        "   background-color: #1e1e1e;"
-        "}"
-        "QWidget {"
-        "   background-color: #1e1e1e;"
-        "   color: #e0e0e0;"
-        "}"
-        "QLineEdit {"
-        "   background-color: #2d2d2d;"
-        "   color: #e0e0e0;"
-        "   border: 1px solid #3d3d3d;"
-        "   border-radius: 4px;"
-        "   padding: 8px;"
-        "}"
-        "QLineEdit:focus {"
-        "   border-color: #0d7377;"
-        "}"
-        "QPushButton {"
-        "   background-color: #2d2d2d;"
-        "   color: #e0e0e0;"
-        "   border: 1px solid #3d3d3d;"
-        "   border-radius: 4px;"
-        "   padding: 8px 16px;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #3d3d3d;"
-        "   border-color: #4d4d4d;"
-        "}"
-        "QPushButton:pressed {"
-        "   background-color: #252525;"
-        "}"
-        "QTableWidget {"
-        "   background-color: #2d2d2d;"
-        "   color: #e0e0e0;"
-        "   border: 1px solid #3d3d3d;"
-        "   gridline-color: #3d3d3d;"
-        "}"
-        "QTableWidget::item {"
-        "   padding: 5px;"
-        "   border: none;"
-        "}"
-        "QTableWidget::item:selected {"
-        "   background-color: #0d7377;"
-        "   color: #ffffff;"
-        "}"
-        "QTableWidget::item:hover {"
-        "   background-color: #3d3d3d;"
-        "}"
-        "QHeaderView::section {"
-        "   background-color: #252525;"
-        "   color: #e0e0e0;"
-        "   padding: 8px;"
-        "   border: 1px solid #3d3d3d;"
-        "   font-weight: bold;"
-        "}"
-        "QMenuBar {"
-        "   background-color: #252525;"
-        "   color: #e0e0e0;"
-        "}"
-        "QMenuBar::item:selected {"
-        "   background-color: #3d3d3d;"
-        "}"
-        "QMenu {"
-        "   background-color: #2d2d2d;"
-        "   color: #e0e0e0;"
-        "   border: 1px solid #3d3d3d;"
-        "}"
-        "QMenu::item:selected {"
-        "   background-color: #0d7377;"
-        "}"
-    );
     
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
@@ -123,19 +62,9 @@ void MainWindow::setupUi() {
     // Buttons
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     m_addButton = new QPushButton("Add Password", this);
+    m_addButton->setObjectName("addButton");
     m_editButton = new QPushButton("Edit", this);
     m_deleteButton = new QPushButton("Delete", this);
-    
-    m_addButton->setStyleSheet(
-        "QPushButton {"
-        "   background-color: #0d7377;"
-        "   color: #ffffff;"
-        "   font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #14a085;"
-        "}"
-    );
     
     m_editButton->setEnabled(false);
     m_deleteButton->setEnabled(false);

@@ -1,0 +1,113 @@
+/* Vault Manager Window Styles */
+
+QWidget {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+#leftPanel {
+    background-color: #252525;
+    color: #e0e0e0;
+}
+
+#rightPanel {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+#vaultListLabel {
+    color: #ffffff;
+}
+
+#vaultList {
+    background-color: #2d2d2d;
+    border: 1px solid #3d3d3d;
+    border-radius: 4px;
+    padding: 5px;
+    color: #e0e0e0;
+}
+
+#vaultList::item {
+    padding: 12px;
+    border-bottom: 1px solid #3d3d3d;
+    border-radius: 4px;
+    margin: 2px 0;
+}
+
+#vaultList::item:selected {
+    background-color: #0d7377;
+    color: #ffffff;
+}
+
+#vaultList::item:hover {
+    background-color: #3d3d3d;
+}
+
+#titleLabel {
+    color: #ffffff;
+}
+
+#infoLabel {
+    color: #a0a0a0;
+    font-size: 13px;
+}
+
+#noSelectionPage, #selectionPage {
+    background-color: transparent;
+}
+
+/* Primary Button Style (Create, Open) */
+#createButton, #openButton {
+    background-color: #0d7377;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 15px 30px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+#createButton:hover, #openButton:hover {
+    background-color: #14a085;
+}
+
+#createButton:pressed, #openButton:pressed {
+    background-color: #0a5a5d;
+}
+
+/* Secondary Button Style (Open Existing, Rename) */
+#openExistingButton, #renameButton {
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+    border: 1px solid #3d3d3d;
+    border-radius: 6px;
+    padding: 15px 30px;
+    font-size: 14px;
+}
+
+#openExistingButton:hover, #renameButton:hover {
+    background-color: #3d3d3d;
+    border-color: #4d4d4d;
+}
+
+#openExistingButton:pressed, #renameButton:pressed {
+    background-color: #252525;
+}
+
+/* Delete Button Style */
+#deleteButton {
+    background-color: #c92a2a;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 15px 30px;
+    font-size: 14px;
+}
+
+#deleteButton:hover {
+    background-color: #e03131;
+}
+
+#deleteButton:pressed {
+    background-color: #a61e1e;
+}

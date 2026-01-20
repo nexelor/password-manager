@@ -33,7 +33,7 @@ set(PROJECT_SOURCES
     src/storage/vaultmanager.h
 )
 
-add_executable(password-manager ${PROJECT_SOURCES})
+add_executable(password-manager ${PROJECT_SOURCES} resources.qrc)
 
 target_link_libraries(password-manager
     Qt6::Core

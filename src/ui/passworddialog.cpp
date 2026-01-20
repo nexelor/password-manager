@@ -6,16 +6,19 @@
 #include <QDialogButtonBox>
 #include <QMessageBox>
 #include <QRandomGenerator>
+#include <QFile>
 
 PasswordDialog::PasswordDialog(QWidget *parent)
     : QDialog(parent), m_isEditMode(false) {
     setupUi();
+    loadStyleSheet();
     setWindowTitle("Add Password");
 }
 
 PasswordDialog::PasswordDialog(const PasswordEntry &entry, QWidget *parent)
     : QDialog(parent), m_isEditMode(true), m_entry(entry) {
     setupUi();
+    loadStyleSheet();
     setWindowTitle("Edit Password");
     
     m_titleInput->setText(entry.title());
@@ -25,51 +28,18 @@ PasswordDialog::PasswordDialog(const PasswordEntry &entry, QWidget *parent)
     m_notesInput->setPlainText(entry.notes());
 }
 
+void PasswordDialog::loadStyleSheet() {
+    QFile styleFile(":/src/styles/passworddialog.qss");
+    if (!styleFile.open(QFile::ReadOnly)) {
+        qWarning("Could not open password dialog stylesheet");
+        return;
+    }
+    QString styleSheet = QLatin1String(styleFile.readAll());
+    setStyleSheet(styleSheet);
+}
+
 void PasswordDialog::setupUi() {
     resize(500, 400);
-    
-    setStyleSheet(
-        "QDialog {"
-        "   background-color: #1e1e1e;"
-        "   color: #e0e0e0;"
-        "}"
-        "QLabel {"
-        "   color: #e0e0e0;"
-        "}"
-        "QLineEdit {"
-        "   background-color: #2d2d2d;"
-        "   color: #e0e0e0;"
-        "   border: 1px solid #3d3d3d;"
-        "   border-radius: 4px;"
-        "   padding: 6px;"
-        "}"
-        "QLineEdit:focus {"
-        "   border-color: #0d7377;"
-        "}"
-        "QTextEdit {"
-        "   background-color: #2d2d2d;"
-        "   color: #e0e0e0;"
-        "   border: 1px solid #3d3d3d;"
-        "   border-radius: 4px;"
-        "   padding: 6px;"
-        "}"
-        "QTextEdit:focus {"
-        "   border-color: #0d7377;"
-        "}"
-        "QPushButton {"
-        "   background-color: #2d2d2d;"
-        "   color: #e0e0e0;"
-        "   border: 1px solid #3d3d3d;"
-        "   border-radius: 4px;"
-        "   padding: 6px 12px;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #3d3d3d;"
-        "}"
-        "QPushButton:pressed {"
-        "   background-color: #252525;"
-        "}"
-    );
     
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     QFormLayout *formLayout = new QFormLayout();
@@ -86,17 +56,8 @@ void PasswordDialog::setupUi() {
     passwordLayout->addWidget(m_passwordInput);
     
     m_generateButton = new QPushButton("Generate", this);
+    m_generateButton->setObjectName("generateButton");
     m_toggleVisibilityButton = new QPushButton("Show", this);
-    
-    m_generateButton->setStyleSheet(
-        "QPushButton {"
-        "   background-color: #0d7377;"
-        "   color: #ffffff;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #14a085;"
-        "}"
-    );
     
     passwordLayout->addWidget(m_generateButton);
     passwordLayout->addWidget(m_toggleVisibilityButton);
@@ -109,17 +70,6 @@ void PasswordDialog::setupUi() {
     
     QDialogButtonBox *buttonBox = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-    
-    buttonBox->setStyleSheet(
-        "QDialogButtonBox QPushButton {"
-        "   min-width: 80px;"
-        "   background-color: #0d7377;"
-        "   color: #ffffff;"
-        "}"
-        "QDialogButtonBox QPushButton:hover {"
-        "   background-color: #14a085;"
-        "}"
-    );
     
     mainLayout->addLayout(formLayout);
     mainLayout->addWidget(buttonBox);

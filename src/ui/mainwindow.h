@@ -40,6 +40,7 @@ private:
     QList<PasswordEntry> m_allEntries;
     
     void setupUi();
+    void loadStyleSheet();
     void loadPasswords();
     void filterPasswords(const QString &searchText);
     void updateTable(const QList<PasswordEntry> &entries);

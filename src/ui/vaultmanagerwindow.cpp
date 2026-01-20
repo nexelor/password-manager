@@ -12,6 +12,7 @@
 VaultManagerWindow::VaultManagerWindow(QWidget *parent)
     : QWidget(parent), m_vaultManager(new VaultManager()) {
     setupUi();
+    loadStyleSheet();
     refreshVaultList();
     showNoSelectionActions();
 }
@@ -20,18 +21,20 @@ VaultManagerWindow::~VaultManagerWindow() {
     delete m_vaultManager;
 }
 
+void VaultManagerWindow::loadStyleSheet() {
+    QFile styleFile(":/src/styles/vaultmanager.qss");
+    if (!styleFile.open(QFile::ReadOnly)) {
+        qWarning("Could not open vault manager stylesheet");
+        return;
+    }
+    QString styleSheet = QLatin1String(styleFile.readAll());
+    setStyleSheet(styleSheet);
+}
+
 void VaultManagerWindow::setupUi() {
     setWindowTitle("Password Manager");
     resize(800, 500);
     setMinimumSize(700, 400);
-    
-    // Dark mode stylesheet for the entire window
-    setStyleSheet(
-        "QWidget {"
-        "   background-color: #1e1e1e;"
-        "   color: #e0e0e0;"
-        "}"
-    );
     
     QHBoxLayout *mainLayout = new QHBoxLayout(this);
     mainLayout->setSpacing(0);
@@ -39,12 +42,7 @@ void VaultManagerWindow::setupUi() {
     
     // Left panel - Vault List
     QWidget *leftPanel = new QWidget(this);
-    leftPanel->setStyleSheet(
-        "QWidget {"
-        "   background-color: #252525;"
-        "   color: #e0e0e0;"
-        "}"
-    );
+    leftPanel->setObjectName("leftPanel");
     leftPanel->setMinimumWidth(300);
     leftPanel->setMaximumWidth(400);
     
@@ -53,47 +51,21 @@ void VaultManagerWindow::setupUi() {
     leftLayout->setSpacing(15);
     
     QLabel *vaultListLabel = new QLabel("Your Vaults", leftPanel);
+    vaultListLabel->setObjectName("vaultListLabel");
     QFont labelFont = vaultListLabel->font();
     labelFont.setPointSize(14);
     labelFont.setBold(true);
     vaultListLabel->setFont(labelFont);
-    vaultListLabel->setStyleSheet("color: #ffffff;");
     
     m_vaultList = new QListWidget(leftPanel);
-    m_vaultList->setStyleSheet(
-        "QListWidget {"
-        "   background-color: #2d2d2d;"
-        "   border: 1px solid #3d3d3d;"
-        "   border-radius: 4px;"
-        "   padding: 5px;"
-        "   color: #e0e0e0;"
-        "}"
-        "QListWidget::item {"
-        "   padding: 12px;"
-        "   border-bottom: 1px solid #3d3d3d;"
-        "   border-radius: 4px;"
-        "   margin: 2px 0;"
-        "}"
-        "QListWidget::item:selected {"
-        "   background-color: #0d7377;"
-        "   color: #ffffff;"
-        "}"
-        "QListWidget::item:hover {"
-        "   background-color: #3d3d3d;"
-        "}"
-    );
+    m_vaultList->setObjectName("vaultList");
     
     leftLayout->addWidget(vaultListLabel);
     leftLayout->addWidget(m_vaultList);
     
     // Right panel - Actions
     QWidget *rightPanel = new QWidget(this);
-    rightPanel->setStyleSheet(
-        "QWidget {"
-        "   background-color: #1e1e1e;"
-        "   color: #e0e0e0;"
-        "}"
-    );
+    rightPanel->setObjectName("rightPanel");
     
     QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
     rightLayout->setContentsMargins(40, 40, 40, 40);
@@ -101,67 +73,32 @@ void VaultManagerWindow::setupUi() {
     
     // Title
     m_titleLabel = new QLabel("Password Manager", rightPanel);
+    m_titleLabel->setObjectName("titleLabel");
     QFont titleFont = m_titleLabel->font();
     titleFont.setPointSize(24);
     titleFont.setBold(true);
     m_titleLabel->setFont(titleFont);
     m_titleLabel->setAlignment(Qt::AlignCenter);
-    m_titleLabel->setStyleSheet("color: #ffffff;");
     
     // Info label
     m_infoLabel = new QLabel(rightPanel);
+    m_infoLabel->setObjectName("infoLabel");
     m_infoLabel->setWordWrap(true);
     m_infoLabel->setAlignment(Qt::AlignCenter);
-    m_infoLabel->setStyleSheet("color: #a0a0a0; font-size: 13px;");
     
     // Stacked widget for action buttons
     m_actionStack = new QStackedWidget(rightPanel);
     
     // Page 0: No selection actions
     QWidget *noSelectionPage = new QWidget();
-    noSelectionPage->setStyleSheet("background-color: transparent;");
+    noSelectionPage->setObjectName("noSelectionPage");
     QVBoxLayout *noSelLayout = new QVBoxLayout(noSelectionPage);
     noSelLayout->setSpacing(15);
     
     m_createButton = new QPushButton("Create New Vault", noSelectionPage);
+    m_createButton->setObjectName("createButton");
     m_openExistingButton = new QPushButton("Open Existing Vault", noSelectionPage);
-    
-    QString buttonStyle = 
-        "QPushButton {"
-        "   background-color: #0d7377;"
-        "   color: #ffffff;"
-        "   border: none;"
-        "   border-radius: 6px;"
-        "   padding: 15px 30px;"
-        "   font-size: 14px;"
-        "   font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #14a085;"
-        "}"
-        "QPushButton:pressed {"
-        "   background-color: #0a5a5d;"
-        "}";
-    
-    QString secondaryButtonStyle = 
-        "QPushButton {"
-        "   background-color: #2d2d2d;"
-        "   color: #e0e0e0;"
-        "   border: 1px solid #3d3d3d;"
-        "   border-radius: 6px;"
-        "   padding: 15px 30px;"
-        "   font-size: 14px;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #3d3d3d;"
-        "   border-color: #4d4d4d;"
-        "}"
-        "QPushButton:pressed {"
-        "   background-color: #252525;"
-        "}";
-    
-    m_createButton->setStyleSheet(buttonStyle);
-    m_openExistingButton->setStyleSheet(secondaryButtonStyle);
+    m_openExistingButton->setObjectName("openExistingButton");
     
     noSelLayout->addStretch();
     noSelLayout->addWidget(m_createButton);
@@ -170,34 +107,16 @@ void VaultManagerWindow::setupUi() {
     
     // Page 1: Selection actions
     QWidget *selectionPage = new QWidget();
-    selectionPage->setStyleSheet("background-color: transparent;");
+    selectionPage->setObjectName("selectionPage");
     QVBoxLayout *selLayout = new QVBoxLayout(selectionPage);
     selLayout->setSpacing(15);
     
     m_openButton = new QPushButton("Open Vault", selectionPage);
+    m_openButton->setObjectName("openButton");
     m_renameButton = new QPushButton("Rename Vault", selectionPage);
+    m_renameButton->setObjectName("renameButton");
     m_deleteButton = new QPushButton("Delete Vault", selectionPage);
-    
-    m_openButton->setStyleSheet(buttonStyle);
-    m_renameButton->setStyleSheet(secondaryButtonStyle);
-    
-    QString deleteButtonStyle = 
-        "QPushButton {"
-        "   background-color: #c92a2a;"
-        "   color: #ffffff;"
-        "   border: none;"
-        "   border-radius: 6px;"
-        "   padding: 15px 30px;"
-        "   font-size: 14px;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #e03131;"
-        "}"
-        "QPushButton:pressed {"
-        "   background-color: #a61e1e;"
-        "}";
-    
-    m_deleteButton->setStyleSheet(deleteButtonStyle);
+    m_deleteButton->setObjectName("deleteButton");
     
     selLayout->addStretch();
     selLayout->addWidget(m_openButton);
@@ -449,14 +368,19 @@ void VaultManagerWindow::openVaultAtPath(const QString &path) {
     
     LoginWindow *loginWindow = new LoginWindow(path);
     loginWindow->setAttribute(Qt::WA_DeleteOnClose);
-    loginWindow->show();
     
+    // Hide vault manager when opening vault
     hide();
     
-    connect(loginWindow, &QObject::destroyed, this, [this]() {
-        refreshVaultList();
-        show();
-        raise();
-        activateWindow();
-    });
+    // Show vault manager when login window closes
+    connect(loginWindow, &QObject::destroyed, this, &VaultManagerWindow::showAndRefresh);
+    
+    loginWindow->show();
+}
+
+void VaultManagerWindow::showAndRefresh() {
+    refreshVaultList();
+    show();
+    raise();
+    activateWindow();
 }

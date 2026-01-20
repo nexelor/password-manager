@@ -17,6 +17,7 @@ public:
 private slots:
     void onLoginClicked();
     void onCreateVaultClicked();
+    void onMainWindowClosed();
 
 private:
     QLineEdit *m_passwordInput;
@@ -28,6 +29,7 @@ private:
     QString m_vaultPath;
     
     void setupUi();
+    void loadStyleSheet();
     bool checkIfVaultExists();
     void createVault(const QString &masterPassword);
     void unlockVault(const QString &masterPassword);

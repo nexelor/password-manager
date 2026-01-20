@@ -15,6 +15,9 @@ public:
     explicit VaultManagerWindow(QWidget *parent = nullptr);
     ~VaultManagerWindow();
 
+public slots:
+    void showAndRefresh();
+
 private slots:
     void onCreateVault();
     void onOpenExisting();
@@ -43,6 +46,7 @@ private:
     QLabel *m_infoLabel;
     
     void setupUi();
+    void loadStyleSheet();
     void refreshVaultList();
     void openVaultAtPath(const QString &path);
     void showNoSelectionActions();

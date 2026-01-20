@@ -33,6 +33,7 @@ private:
     PasswordEntry m_entry;
     
     void setupUi();
+    void loadStyleSheet();
     QString generateRandomPassword(int length = 16);
 };
 

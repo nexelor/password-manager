@@ -5,11 +5,13 @@
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QFileInfo>
+#include <QFile>
 
 LoginWindow::LoginWindow(const QString &vaultPath)
     : QWidget(nullptr), m_database(new Database()), m_vaultPath(vaultPath) {
     setAttribute(Qt::WA_DeleteOnClose);
     setupUi();
+    loadStyleSheet();
     
     if (!m_database->open(m_vaultPath)) {
         QMessageBox::critical(this, "Error", 
@@ -33,74 +35,43 @@ LoginWindow::~LoginWindow() {
     }
 }
 
+void LoginWindow::loadStyleSheet() {
+    QFile styleFile(":/src/styles/loginwindow.qss");
+    if (!styleFile.open(QFile::ReadOnly)) {
+        qWarning("Could not open login window stylesheet");
+        return;
+    }
+    QString styleSheet = QLatin1String(styleFile.readAll());
+    setStyleSheet(styleSheet);
+}
+
 void LoginWindow::setupUi() {
     setWindowTitle("Password Manager - Unlock Vault");
     setMinimumSize(450, 280);
-    
-    setStyleSheet(
-        "QWidget {"
-        "   background-color: #1e1e1e;"
-        "   color: #e0e0e0;"
-        "}"
-        "QLineEdit {"
-        "   background-color: #2d2d2d;"
-        "   color: #e0e0e0;"
-        "   border: 1px solid #3d3d3d;"
-        "   border-radius: 4px;"
-        "   padding: 8px;"
-        "}"
-        "QLineEdit:focus {"
-        "   border-color: #0d7377;"
-        "}"
-    );
     
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(20);
     mainLayout->setContentsMargins(40, 40, 40, 40);
     
     QLabel *titleLabel = new QLabel("Password Manager", this);
+    titleLabel->setObjectName("titleLabel");
     QFont titleFont = titleLabel->font();
     titleFont.setPointSize(18);
     titleFont.setBold(true);
     titleLabel->setFont(titleFont);
     titleLabel->setAlignment(Qt::AlignCenter);
-    titleLabel->setStyleSheet("color: #ffffff;");
     
     m_statusLabel = new QLabel(this);
+    m_statusLabel->setObjectName("statusLabel");
     m_statusLabel->setAlignment(Qt::AlignCenter);
-    m_statusLabel->setStyleSheet("color: #a0a0a0;");
     
     QLabel *passwordLabel = new QLabel("Master Password:", this);
-    passwordLabel->setStyleSheet("color: #e0e0e0;");
     m_passwordInput = new QLineEdit(this);
     m_passwordInput->setEchoMode(QLineEdit::Password);
     m_passwordInput->setPlaceholderText("Enter your master password");
     
     m_loginButton = new QPushButton("Unlock Vault", this);
     m_createVaultButton = new QPushButton("Initialize Vault", this);
-    
-    QString primaryButtonStyle = 
-        "QPushButton {"
-        "   background-color: #0d7377;"
-        "   color: #ffffff;"
-        "   border: none;"
-        "   border-radius: 6px;"
-        "   padding: 10px;"
-        "   font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #14a085;"
-        "}"
-        "QPushButton:pressed {"
-        "   background-color: #0a5a5d;"
-        "}"
-        "QPushButton:disabled {"
-        "   background-color: #3d3d3d;"
-        "   color: #666666;"
-        "}";
-    
-    m_loginButton->setStyleSheet(primaryButtonStyle);
-    m_createVaultButton->setStyleSheet(primaryButtonStyle);
     
     mainLayout->addWidget(titleLabel);
     mainLayout->addWidget(m_statusLabel);
@@ -178,11 +149,20 @@ void LoginWindow::unlockVault(const QString &masterPassword) {
         // Transfer ownership of database to main window
         m_database = nullptr;
         
-        close();
+        // Hide login window but don't close it
+        hide();
+        
+        // When main window closes, close login window (which triggers vault manager to show)
+        connect(mainWindow, &QObject::destroyed, this, &LoginWindow::onMainWindowClosed);
     } else {
         QMessageBox::warning(this, "Authentication Failed", 
             "Incorrect master password. Please try again.");
         m_passwordInput->clear();
         m_passwordInput->setFocus();
     }
+}
+
+void LoginWindow::onMainWindowClosed() {
+    // Close login window, which will trigger the vault manager to show
+    close();
 }
