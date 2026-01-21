@@ -7,12 +7,13 @@
 #include <QLabel>
 #include <QStackedWidget>
 #include "../storage/vaultmanager.h"
+#include "../models/settings.h"
 
 class VaultManagerWindow : public QWidget {
     Q_OBJECT
 
 public:
-    explicit VaultManagerWindow(QWidget *parent = nullptr);
+    explicit VaultManagerWindow(AppSettings *appSettings, QWidget *parent = nullptr);
     ~VaultManagerWindow();
 
 public slots:
@@ -26,10 +27,13 @@ private slots:
     void onDeleteVault();
     void onVaultSelectionChanged();
     void onVaultDoubleClicked(QListWidgetItem *item);
+    void onOpenSettings();
+    void onThemeChanged();
 
 private:
     VaultManager *m_vaultManager;
-    
+    AppSettings *m_appSettings;
+
     QListWidget *m_vaultList;
     QStackedWidget *m_actionStack;
     
@@ -44,6 +48,7 @@ private:
     
     QLabel *m_titleLabel;
     QLabel *m_infoLabel;
+    QPushButton *m_settingsButton;
     
     void setupUi();
     void refreshVaultList();

@@ -108,6 +108,22 @@ QDialogButtonBox QPushButton {
     min-width: 80px;
 }
 
+#settingsButton {
+    background-color: transparent;
+    border: none;
+    color: #1a1a1a;
+    padding: 4px;
+}
+
+#settingsButton:hover {
+    background-color: #e0e0e0;
+    border-radius: 6px;
+}
+
+#settingsButton:pressed {
+    background-color: #d0d0d0;
+}
+
 /* ===== INPUTS ===== */
 QLineEdit {
     background-color: #ffffff;

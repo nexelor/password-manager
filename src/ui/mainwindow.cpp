@@ -22,7 +22,7 @@ MainWindow::MainWindow(Database *database, const QByteArray &masterKey,
       m_masterKey(masterKey),
       m_vaultPath(vaultPath),
       m_appSettings(new AppSettings()),
-      m_vaultSettings(new VaultSettings(vaultPath)),
+      m_vaultSettings(new VaultSettings(database)),  // Pass database to VaultSettings
       m_clipboardTimer(nullptr),
       m_autoLockTimer(nullptr) {
     setAttribute(Qt::WA_DeleteOnClose);

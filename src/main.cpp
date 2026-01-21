@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     // Apply theme
     ThemeManager::instance()->applyTheme(appSettings->theme());
 
-    VaultManagerWindow *vaultManager = new VaultManagerWindow();
+    VaultManagerWindow *vaultManager = new VaultManagerWindow(appSettings);
     vaultManager->setAttribute(Qt::WA_DeleteOnClose);
     vaultManager->show();
 

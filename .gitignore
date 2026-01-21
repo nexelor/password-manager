@@ -1,2 +1,16 @@
 build/
 .cache/
+
+# Vault files (settings are now stored inside the vault)
+*.vault
+*.db
+
+# Backup directories
+backups/
+
+# Qt app settings files (user-specific)
+*.ini
+*.conf
+
+# User data directory
+LocalFirst/

@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QStandardPaths>
 #include <QDir>
+#include <QVariant>
 
 Database::Database() {
     m_db = QSqlDatabase::addDatabase("QSQLITE");
@@ -46,6 +47,7 @@ bool Database::isOpen() const {
 bool Database::createTables() {
     QSqlQuery query(m_db);
 
+    // User table
     if (!query.exec("CREATE TABLE IF NOT EXISTS user ("
                    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                    "master_password_hash TEXT NOT NULL, "
@@ -54,6 +56,7 @@ bool Database::createTables() {
         return false;
     }
 
+    // Passwords table
     if (!query.exec("CREATE TABLE IF NOT EXISTS passwords ("
                    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                    "title_encrypted BLOB NOT NULL, "
@@ -67,6 +70,16 @@ bool Database::createTables() {
         return false;
     }
 
+    // Settings table - stores vault-specific settings
+    if (!query.exec("CREATE TABLE IF NOT EXISTS vault_settings ("
+                   "key TEXT PRIMARY KEY, "
+                   "value TEXT NOT NULL, "
+                   "type TEXT NOT NULL)")) {
+        qDebug() << "Failed to create vault_settings table:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Database tables created/verified successfully";
     return true;
 }
 
@@ -199,4 +212,123 @@ PasswordEntry Database::getEntry(int id, const QByteArray &masterKey) {
         Encryption::decrypt(query.value(5).toByteArray(), masterKey)));
     
     return entry;
+}
+
+// ========== Vault Settings Methods ==========
+
+bool Database::setSetting(const QString &key, const QVariant &value) {
+    if (!m_db.isOpen()) {
+        qWarning() << "Database not open, cannot save setting:" << key;
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    
+    // Store the type information so we can restore it correctly
+    QString typeStr = QString(value.typeName());
+    QString valueStr = value.toString();
+    
+    // Use INSERT OR REPLACE (SQLite specific) to handle both insert and update
+    query.prepare("INSERT OR REPLACE INTO vault_settings (key, value, type) VALUES (?, ?, ?)");
+    query.addBindValue(key);
+    query.addBindValue(valueStr);
+    query.addBindValue(typeStr);
+    
+    bool success = query.exec();
+    if (!success) {
+        qWarning() << "Failed to save setting" << key << ":" << query.lastError().text();
+    } else {
+        qDebug() << "Saved vault setting:" << key << "=" << valueStr << "(" << typeStr << ")";
+    }
+    
+    return success;
+}
+
+QVariant Database::getSetting(const QString &key, const QVariant &defaultValue) const {
+    if (!m_db.isOpen()) {
+        qWarning() << "Database not open, returning default for:" << key;
+        return defaultValue;
+    }
+
+    QSqlQuery query(m_db);
+    query.prepare("SELECT value, type FROM vault_settings WHERE key = ?");
+    query.addBindValue(key);
+    
+    if (!query.exec() || !query.next()) {
+        return defaultValue;
+    }
+    
+    QString valueStr = query.value(0).toString();
+    QString typeStr = query.value(1).toString();
+    
+    // Convert string back to appropriate type
+    QVariant result;
+    
+    if (typeStr == "bool") {
+        result = QVariant(valueStr == "true" || valueStr == "1");
+    } else if (typeStr == "int") {
+        result = QVariant(valueStr.toInt());
+    } else if (typeStr == "double") {
+        result = QVariant(valueStr.toDouble());
+    } else if (typeStr == "QString") {
+        result = QVariant(valueStr);
+    } else {
+        // Default to string
+        result = QVariant(valueStr);
+    }
+    
+    qDebug() << "Loaded vault setting:" << key << "=" << result << "(" << typeStr << ")";
+    return result;
+}
+
+bool Database::hasSetting(const QString &key) const {
+    if (!m_db.isOpen()) {
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    query.prepare("SELECT COUNT(*) FROM vault_settings WHERE key = ?");
+    query.addBindValue(key);
+    
+    if (!query.exec() || !query.next()) {
+        return false;
+    }
+    
+    return query.value(0).toInt() > 0;
+}
+
+bool Database::removeSetting(const QString &key) {
+    if (!m_db.isOpen()) {
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    query.prepare("DELETE FROM vault_settings WHERE key = ?");
+    query.addBindValue(key);
+    
+    bool success = query.exec();
+    if (success) {
+        qDebug() << "Removed vault setting:" << key;
+    }
+    
+    return success;
+}
+
+QStringList Database::getAllSettingKeys() const {
+    QStringList keys;
+    
+    if (!m_db.isOpen()) {
+        return keys;
+    }
+
+    QSqlQuery query(m_db);
+    if (!query.exec("SELECT key FROM vault_settings")) {
+        return keys;
+    }
+    
+    while (query.next()) {
+        keys.append(query.value(0).toString());
+    }
+    
+    return keys;
 }

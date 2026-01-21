@@ -4,19 +4,21 @@
 #include <QString>
 #include <QSettings>
 
+class Database;
+
 class AppSettings {
 public:
     enum Theme {
-        Dark,
-        Light,
-        System
+        Dark = 0,
+        Light = 1,
+        System = 2
     };
     
     enum Language {
-        English,
-        French,
-        Spanish,
-        German
+        English = 0,
+        French = 1,
+        Spanish = 2,
+        German = 3
     };
     
     AppSettings();
@@ -75,19 +77,19 @@ private:
 class VaultSettings {
 public:
     enum BackupFrequency {
-        Never,
-        Daily,
-        Weekly,
-        Monthly
+        Never = 0,
+        Daily = 1,
+        Weekly = 2,
+        Monthly = 3
     };
     
     enum SyncOption {
-        PasswordsOnly,
-        SettingsOnly,
-        Everything
+        PasswordsOnly = 0,
+        SettingsOnly = 1,
+        Everything = 2
     };
     
-    VaultSettings(const QString &vaultPath);
+    VaultSettings(Database *database);
     
     // Backup Settings
     bool autoBackupEnabled() const { return m_autoBackupEnabled; }
@@ -129,7 +131,8 @@ public:
     void save();
     
 private:
-    QString m_vaultPath;
+    Database *m_database;
+    
     bool m_autoBackupEnabled;
     BackupFrequency m_backupFrequency;
     QString m_backupLocation;
@@ -141,9 +144,6 @@ private:
     bool m_showPasswordStrength;
     bool m_requirePasswordConfirmation;
     int m_defaultPasswordLength;
-    
-    QSettings m_settings;
-    QString getSettingsPath() const;
 };
 
 #endif

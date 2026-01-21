@@ -1,5 +1,7 @@
 #include "vaultmanagerwindow.h"
 #include "loginwindow.h"
+#include "settingsdialog.h"
+#include "thememanager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFileDialog>
@@ -9,11 +11,15 @@
 #include <QInputDialog>
 #include <QFile>
 
-VaultManagerWindow::VaultManagerWindow(QWidget *parent)
-    : QWidget(parent), m_vaultManager(new VaultManager()) {
+VaultManagerWindow::VaultManagerWindow(AppSettings *appSettings, QWidget *parent)
+    : QWidget(parent), m_vaultManager(new VaultManager()), m_appSettings(appSettings) {
     setupUi();
     refreshVaultList();
     showNoSelectionActions();
+    
+    // Connect to theme changes
+    connect(ThemeManager::instance(), &ThemeManager::themeChanged, 
+            this, &VaultManagerWindow::onThemeChanged);
 }
 
 VaultManagerWindow::~VaultManagerWindow() {
@@ -39,17 +45,32 @@ void VaultManagerWindow::setupUi() {
     leftLayout->setContentsMargins(20, 20, 20, 20);
     leftLayout->setSpacing(15);
     
+    // Header with title and settings button
+    QHBoxLayout *headerLayout = new QHBoxLayout();
     QLabel *vaultListLabel = new QLabel("Your Vaults", leftPanel);
     vaultListLabel->setObjectName("vaultListLabel");
     QFont labelFont = vaultListLabel->font();
     labelFont.setPointSize(14);
     labelFont.setBold(true);
     vaultListLabel->setFont(labelFont);
+
+    m_settingsButton = new QPushButton("⚙", leftPanel);
+    m_settingsButton->setObjectName("settingsButton");
+    m_settingsButton->setToolTip("Settings");
+    m_settingsButton->setMaximumWidth(40);
+    m_settingsButton->setMaximumHeight(40);
+    QFont settingsFont = m_settingsButton->font();
+    settingsFont.setPointSize(16);
+    m_settingsButton->setFont(settingsFont);
+    
+    headerLayout->addWidget(vaultListLabel);
+    headerLayout->addStretch();
+    headerLayout->addWidget(m_settingsButton);
     
     m_vaultList = new QListWidget(leftPanel);
     m_vaultList->setObjectName("vaultList");
     
-    leftLayout->addWidget(vaultListLabel);
+    leftLayout->addLayout(headerLayout);
     leftLayout->addWidget(m_vaultList);
     
     // Right panel - Actions
@@ -132,6 +153,7 @@ void VaultManagerWindow::setupUi() {
     connect(m_openButton, &QPushButton::clicked, this, &VaultManagerWindow::onOpenSelected);
     connect(m_renameButton, &QPushButton::clicked, this, &VaultManagerWindow::onRenameVault);
     connect(m_deleteButton, &QPushButton::clicked, this, &VaultManagerWindow::onDeleteVault);
+    connect(m_settingsButton, &QPushButton::clicked, this, &VaultManagerWindow::onOpenSettings);
     connect(m_vaultList, &QListWidget::itemSelectionChanged, this, &VaultManagerWindow::onVaultSelectionChanged);
     connect(m_vaultList, &QListWidget::itemDoubleClicked, this, &VaultManagerWindow::onVaultDoubleClicked);
 }
@@ -350,6 +372,16 @@ void VaultManagerWindow::onDeleteVault() {
                 "Failed to delete the vault file. Check file permissions.");
         }
     }
+}
+
+void VaultManagerWindow::onOpenSettings() {
+    SettingsDialog dialog(m_appSettings, nullptr, this);
+    dialog.exec();
+    // Theme changes are applied immediately in the dialog
+}
+
+void VaultManagerWindow::onThemeChanged() {
+    // Theme is applied globally, window will update automatically
 }
 
 void VaultManagerWindow::openVaultAtPath(const QString &path) {
